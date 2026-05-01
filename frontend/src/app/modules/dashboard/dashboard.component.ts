@@ -35,14 +35,12 @@ import { ApiService } from '../../core/api.service';
       <div class="card">
         <div class="card-header">⚡ Quick Actions</div>
         <div class="grid grid-2" style="margin-top: 1rem;">
-          <a routerLink="/schedule/generate" class="card" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;"
-             (mouseenter)="this.style.transform='translateY(-2px)'" (mouseleave)="this.style.transform='translateY(0)'">
+          <a routerLink="/schedule/generate" class="card" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚙️</div>
             <h3 style="color: #2563eb;">Generate Schedule</h3>
             <p style="color: #64748b; font-size: 0.875rem;">Create a new automated schedule</p>
           </a>
-          <a routerLink="/staff" class="card" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;"
-             (mouseenter)="this.style.transform='translateY(-2px)'" (mouseleave)="this.style.transform='translateY(0)'">
+          <a routerLink="/staff" class="card" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">👥</div>
             <h3 style="color: #2563eb;">Manage Staff</h3>
             <p style="color: #64748b; font-size: 0.875rem;">Add or edit staff members</p>
