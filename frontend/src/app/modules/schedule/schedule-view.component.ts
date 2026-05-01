@@ -158,6 +158,7 @@ export class ScheduleViewComponent implements OnInit {
   showStats = false;
   staffStats: any[] = [];
   totals = { normal: 0, morning: 0, evening: 0, night: 0, total: 0, off: 0 };
+  // Version 1.0.5 - Cache Buster
 
   constructor(private apiService: ApiService) { }
 
@@ -259,7 +260,7 @@ export class ScheduleViewComponent implements OnInit {
       if (!shiftMap[entry.staff_id]) {
         shiftMap[entry.staff_id] = {};
       }
-      shiftMap[entry.staff_id][entry.date] = entry.shift_type;
+      shiftMap[entry.staff_id][this.formatDateKey(entry.date)] = entry.shift_type;
 
       if (!perStaff[entry.staff_id]) {
         perStaff[entry.staff_id] = { normal: 0, morning: 0, evening: 0, night: 0, total: 0 };
@@ -278,7 +279,8 @@ export class ScheduleViewComponent implements OnInit {
 
       const shifts: string[] = [];
       for (const day of this.days) {
-        const shiftType = shiftMap[staff.id]?.[day.fullDate] || '—';
+        const dateKey = this.formatDateKey(day.fullDate);
+        const shiftType = shiftMap[staff.id]?.[dateKey] || '—';
         shifts.push(shiftType);
       }
 
@@ -338,7 +340,15 @@ export class ScheduleViewComponent implements OnInit {
       case 'M': return 'badge-morning';
       case 'E': return 'badge-evening';
       case 'N': return 'badge-night';
-      default: return 'badge-off';
+      default: return '';
     }
+  }
+
+  formatDateKey(dateInput: any): string {
+    if (!dateInput) return '';
+    const dateStr = String(dateInput);
+    // Extract YYYY-MM-DD regardless of format (ISO string or simple date string)
+    const match = dateStr.match(/(\d{4}-\d{2}-\d{2})/);
+    return match ? match[1] : dateStr.substring(0, 10);
   }
 }

@@ -52,7 +52,19 @@ async def update_shift(entry_id: int, update: ScheduleEntryUpdate, db: Session =
         raise HTTPException(status_code=404, detail="Shift entry not found")
     return entry
 
-@router.get("/{schedule_id}/entries", response_model=List[ScheduleEntry])
+@router.get("/{schedule_id}/entries")
 async def get_schedule_entries(schedule_id: int, db: Session = Depends(get_db)):
     from app.models.schedule_entry import ScheduleEntry
-    return db.query(ScheduleEntry).filter(ScheduleEntry.schedule_id == schedule_id).all()
+    entries = db.query(ScheduleEntry).filter(ScheduleEntry.schedule_id == schedule_id).all()
+    # Explicitly serialize dates as strings to avoid any client-side shift
+    return [
+        {
+            "id": e.id,
+            "schedule_id": e.schedule_id,
+            "staff_id": e.staff_id,
+            "date": e.date.isoformat(),
+            "day_of_week": e.day_of_week.value,
+            "shift_type": e.shift_type.value
+        }
+        for e in entries
+    ]
