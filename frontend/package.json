@@ -1,0 +1,24 @@
+{
+  "name": "timetable-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "ng serve",
+    "build": "ng build",
+    "test": "ng test",
+    "lint": "ng lint"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/core": "^18.0.0",
+    "@angular/common": "^18.0.0",
+    "@angular/router": "^18.0.0",
+    "@angular/forms": "^18.0.0",
+    "rxjs": "~7.8.0",
+    "typescript": "~5.4.0",
+    "axios": "^1.7.0"
+  },
+  "devDependencies": {
+    "@angular/cli": "^18.0.0",
+    "@angular/compiler-cli": "^18.0.0"
+  }
+}

@@ -1,0 +1,230 @@
+FULL PROJECT PROMPT — STAFF SCHEDULING SYSTEM
+1. Objective
+
+Design and implement a full-stack staff scheduling (rostering) system that automatically generates monthly work schedules based on strict operational rules, fairness constraints, and real-world shift logic.
+
+The system must:
+
+Generate schedules automatically
+Allow manual adjustments
+Enforce all business rules
+Ensure fair distribution of workload (especially night shifts)
+2. Technology Stack
+Backend
+Language: Python
+Framework: FastAPI
+Environment: Linux
+Frontend
+Framework: Angular
+Database
+MySQL
+Deployment
+Nginx (reverse proxy)
+systemd (process management)
+3. Core System Modules
+3.1 Staff Management
+Add/edit/remove staff
+Assign roles (optional)
+Track availability (optional future extension)
+3.2 Schedule Management
+Generate monthly schedules
+View schedules (calendar/table format)
+Edit schedules manually
+Lock finalized schedules
+3.3 Shift Types
+
+Define shifts:
+
+Morning (M): morning → 8 PM
+Evening (E): 8 PM → 2 AM
+Night (N): night shift
+Off (O): rest day
+4. Business Rules (CRITICAL)
+4.1 Weekend Rules (Saturday & Sunday)
+Exactly:
+1 Morning staff
+1 Evening staff
+Night:
+1 or 2 staff (configurable, default = 2)
+4.2 Night Shift Rules
+If a staff works Night:
+Next day:
+Cannot work Morning
+Can only work Evening (or Off)
+If a staff works 2 consecutive Nights:
+Must get:
+2 consecutive OFF days
+Cannot be scheduled during rest
+4.3 Rest Enforcement
+Staff in rest period:
+Cannot be assigned any shift
+4.4 Shift Constraints
+One staff → one shift per day
+No overlapping shifts
+4.5 Coverage Constraints
+
+Each day must have:
+
+Required shifts filled (no gaps)
+5. Fairness Constraints
+Each staff must have:
+Minimum 8 night shifts
+Maximum 10 night shifts
+Workload must be balanced across staff
+6. Scheduling Algorithm (MANDATORY IMPLEMENTATION)
+
+Implement a constraint-driven scheduling engine with the following structure:
+
+STEP 1: Initialization
+Create empty schedule matrix:
+schedule[staff][day]
+Track:
+night_count per staff
+rest_until per staff
+STEP 2: Assign Night Shifts FIRST (Highest Priority)
+
+For each day:
+
+Determine number of night staff:
+Weekend → 1–2
+Weekday → 1 (configurable)
+Filter candidates:
+Exclude:
+Staff in rest
+Staff exceeding night limits
+Staff with 2 consecutive nights
+Rank candidates:
+Lowest night_count
+Longest since last night shift
+Assign night shift(s)
+Update:
+night_count
+last_night_day
+STEP 3: Apply Night Constraints
+
+For each night assignment:
+
+Next day:
+Disallow Morning
+If 2 consecutive nights:
+Day+2 and Day+3 → OFF
+Update rest_until
+STEP 4: Assign Weekend Shifts (M + E)
+
+For each weekend day:
+
+Assign:
+1 Morning
+1 Evening
+
+Constraints:
+
+Exclude:
+Previous night staff
+Staff in rest
+Already assigned staff
+
+Selection:
+
+Choose least workload staff
+STEP 5: Assign Weekday Shifts
+
+For weekdays:
+
+Assign Morning first, then Evening
+
+Constraints:
+
+No Morning after Night
+Respect rest rules
+
+Selection:
+
+Least total workload
+STEP 6: Gap Filling
+Fill any unassigned shifts
+Relax only soft constraints
+Never violate hard constraints
+STEP 7: Optimization Phase
+
+Run iterative improvement:
+
+Swap shifts between staff
+Evaluate using scoring function:
+
+Score =
+
+Night imbalance penalty
+Workload imbalance penalty
+Rule violation penalty (very high)
+
+Keep only improvements
+
+7. Backend Requirements
+API Endpoints
+Staff:
+Create / Update / Delete / List
+Schedule:
+Generate schedule
+Get schedule by month
+Update single shift
+Lock schedule
+Services
+Scheduler Engine (core logic)
+Validation service (rule enforcement)
+Schedule service (orchestration)
+8. Database Design (MySQL)
+
+Tables:
+
+staff
+schedules
+schedule_entries
+night_tracking
+
+Each schedule entry:
+
+staff_id
+date
+shift_type (M, E, N, O)
+9. Frontend Requirements (Angular)
+Features
+Staff management UI
+Schedule generator button
+Monthly calendar view
+Editable schedule grid (Excel-like)
+Highlight:
+Night shifts
+Rest days
+Validation warnings on rule violations
+10. Security & Validation
+Validate all API inputs
+Prevent invalid shift assignments
+Ensure no rule violations at save time
+11. Output Requirements
+
+The system must:
+
+Generate a valid monthly schedule
+Respect ALL constraints
+Ensure fair distribution of night shifts
+Avoid staff overload
+Allow manual overrides with validation
+12. Constraints
+Do NOT violate business rules
+Do NOT skip night/rest logic
+Do NOT hardcode staff count
+System must be scalable
+13. Deliverables
+
+The AI agent must produce:
+
+Backend (FastAPI project)
+Scheduler engine implementation
+MySQL schema
+Angular frontend
+API integration
+Deployment configuration (Linux)
+Final Instruction
+
+Build a complete, production-ready staff scheduling system that strictly enforces all rules, uses the defined algorithm, and produces fair, valid schedules without manual intervention.
