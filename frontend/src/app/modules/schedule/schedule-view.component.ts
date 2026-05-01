@@ -7,7 +7,7 @@ import { forkJoin } from 'rxjs';
   selector: 'app-schedule-view',
   standalone: true,
   template: `
-    <div style="width: 100%; padding: 1rem;">
+    <div class="container">
       <div class="card">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
           <span>📋 Schedule View</span>
@@ -35,6 +35,7 @@ import { forkJoin } from 'rxjs';
                 <tr style="background: #eef2ff;">
                   <th style="min-width: 40px;">#</th>
                   <th style="min-width: 180px;">Staff Name</th>
+                  <th style="text-align: center;">☀️ Normal Day</th>
                   <th style="text-align: center;">🌅 Morning</th>
                   <th style="text-align: center;">🌆 Evening</th>
                   <th style="text-align: center;">🌙 Night</th>
@@ -46,6 +47,7 @@ import { forkJoin } from 'rxjs';
                 <tr *ngFor="let s of staffStats; let i = index">
                   <td style="color: #94a3b8;">{{ i + 1 }}</td>
                   <td style="font-weight: 600;">{{ s.name }}</td>
+                  <td style="text-align: center;"><span class="badge" style="background:#dcfce7;color:#166534;">{{ s.normal }}</span></td>
                   <td style="text-align: center;"><span class="badge badge-morning">{{ s.morning }}</span></td>
                   <td style="text-align: center;"><span class="badge badge-evening">{{ s.evening }}</span></td>
                   <td style="text-align: center;"><span class="badge badge-night">{{ s.night }}</span></td>
@@ -57,6 +59,7 @@ import { forkJoin } from 'rxjs';
                 <tr style="background: #f1f5f9; font-weight: 700;">
                   <td></td>
                   <td>TOTALS</td>
+                  <td style="text-align: center;">{{ totals.normal }}</td>
                   <td style="text-align: center;">{{ totals.morning }}</td>
                   <td style="text-align: center;">{{ totals.evening }}</td>
                   <td style="text-align: center;">{{ totals.night }}</td>
@@ -78,6 +81,9 @@ import { forkJoin } from 'rxjs';
           </div>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <span class="badge badge-night">N</span> Night
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge" style="background:#dcfce7;color:#166534;">D</span> Normal Day
           </div>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <span class="badge badge-off">—</span> Off / Rest
@@ -151,7 +157,7 @@ export class ScheduleViewComponent implements OnInit {
   staffMap: { [id: number]: string } = {};
   showStats = false;
   staffStats: any[] = [];
-  totals = { morning: 0, evening: 0, night: 0, total: 0, off: 0 };
+  totals = { normal: 0, morning: 0, evening: 0, night: 0, total: 0, off: 0 };
 
   constructor(private apiService: ApiService) { }
 
@@ -174,10 +180,14 @@ export class ScheduleViewComponent implements OnInit {
     this.days = [];
     for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
       const dow = d.getDay();
+      const yr = d.getFullYear();
+      const mo = String(d.getMonth() + 1).padStart(2, '0');
+      const da = String(d.getDate()).padStart(2, '0');
+
       this.days.push({
         date: d.getDate(),
         dayShort: d.toLocaleString('default', { weekday: 'short' }),
-        fullDate: d.toISOString().split('T')[0],
+        fullDate: `${yr}-${mo}-${da}`,
         isWeekend: dow === 0 || dow === 6
       });
     }
@@ -200,7 +210,7 @@ export class ScheduleViewComponent implements OnInit {
     this.scheduleGrid = [];
     this.stats = null;
     this.staffStats = [];
-    this.totals = { morning: 0, evening: 0, night: 0, total: 0, off: 0 };
+    this.totals = { normal: 0, morning: 0, evening: 0, night: 0, total: 0, off: 0 };
     const year = this.currentDate.getFullYear();
     const month = this.currentDate.getMonth() + 1;
 
@@ -242,7 +252,7 @@ export class ScheduleViewComponent implements OnInit {
   processEntries(entries: any[], staffList: any[]) {
     const shiftMap: { [staffId: number]: { [date: string]: string } } = {};
     const staffIds = new Set<number>();
-    const perStaff: { [id: number]: { morning: number; evening: number; night: number; total: number } } = {};
+    const perStaff: { [id: number]: { normal: number; morning: number; evening: number; night: number; total: number } } = {};
 
     for (const entry of entries) {
       staffIds.add(entry.staff_id);
@@ -252,9 +262,10 @@ export class ScheduleViewComponent implements OnInit {
       shiftMap[entry.staff_id][entry.date] = entry.shift_type;
 
       if (!perStaff[entry.staff_id]) {
-        perStaff[entry.staff_id] = { morning: 0, evening: 0, night: 0, total: 0 };
+        perStaff[entry.staff_id] = { normal: 0, morning: 0, evening: 0, night: 0, total: 0 };
       }
       perStaff[entry.staff_id].total++;
+      if (entry.shift_type === 'D') perStaff[entry.staff_id].normal++;
       if (entry.shift_type === 'M') perStaff[entry.staff_id].morning++;
       if (entry.shift_type === 'E') perStaff[entry.staff_id].evening++;
       if (entry.shift_type === 'N') perStaff[entry.staff_id].night++;
@@ -281,20 +292,22 @@ export class ScheduleViewComponent implements OnInit {
     // Build staff statistics
     const totalDays = this.days.length;
     this.staffStats = [];
-    this.totals = { morning: 0, evening: 0, night: 0, total: 0, off: 0 };
+    this.totals = { normal: 0, morning: 0, evening: 0, night: 0, total: 0, off: 0 };
 
     for (const staff of staffList) {
       if (!staffIds.has(staff.id)) continue;
-      const s = perStaff[staff.id] || { morning: 0, evening: 0, night: 0, total: 0 };
+      const s = perStaff[staff.id] || { normal: 0, morning: 0, evening: 0, night: 0, total: 0 };
       const off = totalDays - s.total;
       this.staffStats.push({
         name: staff.name,
+        normal: s.normal,
         morning: s.morning,
         evening: s.evening,
         night: s.night,
         total: s.total,
         off: off
       });
+      this.totals.normal += s.normal;
       this.totals.morning += s.morning;
       this.totals.evening += s.evening;
       this.totals.night += s.night;
@@ -321,6 +334,7 @@ export class ScheduleViewComponent implements OnInit {
 
   getBadgeClass(shift: string): string {
     switch (shift) {
+      case 'D': return 'badge-normal';
       case 'M': return 'badge-morning';
       case 'E': return 'badge-evening';
       case 'N': return 'badge-night';

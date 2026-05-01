@@ -63,13 +63,23 @@ class ScheduleService:
         self.db.refresh(schedule)
         
         # Get staff list
-        query = self.db.query(Staff)
+        query = self.db.query(Staff).filter(Staff.is_active == True)
         if request.staff_ids:
             query = query.filter(Staff.id.in_(request.staff_ids))
         staff_list = query.all()
         
         if not staff_list:
-            return {"schedule": schedule, "entries": [], "message": "No staff found"}
+            return {
+                "schedule": {
+                    "id": schedule.id,
+                    "name": schedule.name,
+                    "start_date": str(schedule.start_date),
+                    "end_date": str(schedule.end_date),
+                    "is_locked": schedule.is_locked
+                },
+                "entries": [],
+                "message": "No staff found"
+            }
         
         # Run scheduler engine
         try:
@@ -88,19 +98,32 @@ class ScheduleService:
                     "schedule_id": entry.schedule_id,
                     "staff_id": entry.staff_id,
                     "date": str(entry.date),
-                    "day_of_week": str(entry.day_of_week),
-                    "shift_type": str(entry.shift_type)
+                    "day_of_week": entry.day_of_week.value,
+                    "shift_type": entry.shift_type.value
                 })
             
-            return {"schedule": {
-                        "id": schedule.id,
-                        "name": schedule.name,
-                        "start_date": str(schedule.start_date),
-                        "end_date": str(schedule.end_date),
-                        "is_locked": schedule.is_locked
-                    }, "entries": entry_dicts}
+            return {
+                "schedule": {
+                    "id": schedule.id,
+                    "name": schedule.name,
+                    "start_date": str(schedule.start_date),
+                    "end_date": str(schedule.end_date),
+                    "is_locked": schedule.is_locked
+                },
+                "entries": entry_dicts
+            }
         except Exception as e:
-            return {"schedule": schedule, "entries": [], "error": str(e)}
+            return {
+                "schedule": {
+                    "id": schedule.id,
+                    "name": schedule.name,
+                    "start_date": str(schedule.start_date),
+                    "end_date": str(schedule.end_date),
+                    "is_locked": schedule.is_locked
+                },
+                "entries": [],
+                "error": str(e)
+            }
     
     def update_shift(self, entry_id: int, update: ScheduleEntryUpdate):
         """Update a single shift entry"""

@@ -40,13 +40,17 @@ class SchedulerEngine:
             self.last_night_day[t.staff_id] = t.last_night_day
     
     def generate_schedule(self) -> List[ScheduleEntry]:
-        """Main scheduling method implementing AGENT.MD.txt steps 1-7"""
-        # Step 1: Initialization (already done in __init__)
+        """Generate full schedule"""
+        # Step 1: Pre-initialize matrix keys
+        self.schedule_matrix = {
+            self.start_date + timedelta(days=i): {} 
+            for i in range((self.end_date - self.start_date).days + 1)
+        }
         
-        # Step 2: Assign Night Shifts FIRST (Highest Priority)
+        # Step 2: Night Shifts
         self._assign_night_shifts()
         
-        # Step 3: Apply Night Constraints
+        # Step 3: Constraints
         self._apply_night_constraints()
         
         # Step 4: Assign Weekend Shifts (M + E)
@@ -83,22 +87,51 @@ class SchedulerEngine:
         return day.weekday() >= 5
     
     def _assign_night_shifts(self):
-        """Step 2: Assign Night Shifts FIRST"""
+        """Step 2: Assign Night Shifts FIRST in 2-day blocks"""
         current_date = self.start_date
         while current_date <= self.end_date:
-            day_type = self._get_day_type(current_date)
             is_weekend = self._is_weekend(current_date)
             num_night_staff = DEFAULT_WEEKEND_NIGHT_STAFF if is_weekend else DEFAULT_WEEKDAY_NIGHT_STAFF
             
-            # Get available candidates for night shift
-            candidates = self._get_night_candidates(current_date, num_night_staff)
+            yesterday = current_date - timedelta(days=1)
+            day_before_yesterday = yesterday - timedelta(days=1)
+            assigned_today = []
             
-            # Assign night shifts to top candidates
-            for staff_id in candidates[:num_night_staff]:
-                self.schedule_matrix[current_date][staff_id] = ShiftType.NIGHT
-                self.night_count[staff_id] += 1
-                self.last_night_day[staff_id] = current_date
-                self.workload[staff_id] += 1
+            # 1. Complete blocks for staff who worked ONLY YESTERDAY
+            if yesterday in self.schedule_matrix:
+                for staff_id, shift in self.schedule_matrix[yesterday].items():
+                    if shift == ShiftType.NIGHT:
+                        # Check if they also worked 2 days ago
+                        worked_night_before = False
+                        if day_before_yesterday in self.schedule_matrix:
+                            if self.schedule_matrix[day_before_yesterday].get(staff_id) == ShiftType.NIGHT:
+                                worked_night_before = True
+                        
+                        if not worked_night_before:
+                            # They need their 2nd night to complete the block
+                            self.schedule_matrix[current_date][staff_id] = ShiftType.NIGHT
+                            self.night_count[staff_id] += 1
+                            self.last_night_day[staff_id] = current_date
+                            self.workload[staff_id] += 1
+                            assigned_today.append(staff_id)
+
+            # 2. Fill remaining slots with NEW blocks
+            needed = num_night_staff - len(assigned_today)
+            if needed > 0:
+                candidates = self._get_night_candidates(current_date, needed)
+                # Filter out those who were already assigned today
+                available = [sid for sid in candidates if sid not in assigned_today]
+                
+                # Further filter: don't start a NEW block if they worked yesterday 
+                # (prevents accidental 3-night chains or weird overlaps)
+                available = [sid for sid in available if self.last_night_day[sid] != yesterday]
+                
+                for staff_id in available[:needed]:
+                    self.schedule_matrix[current_date][staff_id] = ShiftType.NIGHT
+                    self.night_count[staff_id] += 1
+                    self.last_night_day[staff_id] = current_date
+                    self.workload[staff_id] += 1
+                    assigned_today.append(staff_id)
             
             current_date += timedelta(days=1)
     
@@ -109,6 +142,11 @@ class SchedulerEngine:
             staff_id = staff.id
             # Check if staff is in rest period
             if self.rest_until[staff_id] > day:
+                continue
+            # Check night shift eligibility
+            eligible = getattr(staff, 'can_work_night_shift', True)
+            if not eligible:
+                # print(f"DEBUG: Staff {staff.name} (ID {staff_id}) is NOT eligible for night shifts")
                 continue
             # Check night shift limits
             if self.night_count[staff_id] >= MAX_NIGHT_SHIFTS:
@@ -146,13 +184,13 @@ class SchedulerEngine:
                     prev_day = day - timedelta(days=1)
                     if (prev_day in self.schedule_matrix and 
                         self.schedule_matrix[prev_day].get(staff_id) == ShiftType.NIGHT):
-                        # 2 consecutive nights: rest for 2 days (Day+2 and Day+3 OFF)
-                        self.rest_until[staff_id] = day + timedelta(days=3)
-                        # Set OFF for Day+2 and Day+3
-                        for offset in [2, 3]:
-                            rest_day = day + timedelta(days=offset)
-                            if rest_day <= self.end_date:
-                                self.schedule_matrix[rest_day][staff_id] = ShiftType.OFF
+                        # 2 consecutive nights: rest for 1 day (Day+1 is OFF)
+                        # We rest UNTIL start of Day+2
+                        self.rest_until[staff_id] = day + timedelta(days=2)
+                        # Set OFF for Day+1
+                        rest_day = day + timedelta(days=1)
+                        if rest_day <= self.end_date:
+                            self.schedule_matrix[rest_day][staff_id] = ShiftType.OFF
     
     def _assign_weekend_shifts(self):
         """Step 4: Assign Weekend Shifts (M + E)"""
@@ -169,16 +207,29 @@ class SchedulerEngine:
             current_date += timedelta(days=1)
     
     def _assign_weekday_shifts(self):
-        """Step 5: Assign Weekday Shifts"""
+        """Step 5: Assign Weekday Shifts - ALL available staff get Normal Day duty"""
         current_date = self.start_date
         while current_date <= self.end_date:
             if self._is_weekend(current_date):
                 current_date += timedelta(days=1)
                 continue
             
-            # Assign Morning first, then Evening
-            self._assign_shift_for_day(current_date, ShiftType.MORNING)
-            self._assign_shift_for_day(current_date, ShiftType.EVENING)
+            # Assign ALL eligible staff to Normal Day shift
+            for staff in self.staff_list:
+                staff_id = staff.id
+                
+                # Skip if already assigned (night shift or OFF)
+                if staff_id in self.schedule_matrix[current_date]:
+                    continue
+                
+                # Skip if had night shift previous day (need rest)
+                prev_day = current_date - timedelta(days=1)
+                if (prev_day in self.schedule_matrix and 
+                    self.schedule_matrix[prev_day].get(staff_id) == ShiftType.NIGHT):
+                    continue
+                
+                self.schedule_matrix[current_date][staff_id] = ShiftType.NORMAL
+                self.workload[staff_id] += 1
             
             current_date += timedelta(days=1)
     
@@ -191,9 +242,7 @@ class SchedulerEngine:
             # Check if already assigned that day
             if staff_id in self.schedule_matrix[day]:
                 continue
-            # Check rest period
-            if self.rest_until[staff_id] > day:
-                continue
+            
             # Check Morning after Night constraint
             if shift_type == ShiftType.MORNING:
                 prev_day = day - timedelta(days=1)
@@ -240,8 +289,6 @@ class SchedulerEngine:
             }
         else:
             return {
-                ShiftType.MORNING: 1,
-                ShiftType.EVENING: 1,
                 ShiftType.NIGHT: DEFAULT_WEEKDAY_NIGHT_STAFF
             }
     
@@ -276,6 +323,12 @@ class SchedulerEngine:
             return False
         if self.night_count[staff2_id] >= MAX_NIGHT_SHIFTS:
             return False
+        
+        # Check eligibility flag
+        staff2 = next((s for s in self.staff_list if s.id == staff2_id), None)
+        if staff2 and not getattr(staff2, 'can_work_night_shift', True):
+            return False
+            
         return True
     
     def _swap_night_shift(self, day: date, staff1_id: int, staff2_id: int):

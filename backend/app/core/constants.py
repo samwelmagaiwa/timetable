@@ -5,6 +5,7 @@ class ShiftType(str, Enum):
     MORNING = "M"   # Morning: morning → 8 PM (20:00)
     EVENING = "E"    # Evening: 8 PM → 2 AM
     NIGHT = "N"      # Night shift
+    NORMAL = "D"     # Normal weekday duty (all available staff)
     OFF = "O"        # Rest day
 
 class DayOfWeek(str, Enum):
@@ -31,7 +32,7 @@ SHIFT_TIMES = {
 }
 
 # Scheduling constants (from AGENT.MD.txt)
-DEFAULT_WEEKDAY_NIGHT_STAFF = 1
+DEFAULT_WEEKDAY_NIGHT_STAFF = 2
 DEFAULT_WEEKEND_NIGHT_STAFF = 2  # Configurable 1-2
 
 # Fairness constraints

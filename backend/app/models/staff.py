@@ -14,6 +14,7 @@ class Staff(Base):
     is_active = Column(Boolean, default=True)
     max_hours_per_week = Column(Integer, default=40)
     min_hours_between_shifts = Column(Integer, default=8)
+    can_work_night_shift = Column(Boolean, default=True)
     
     # Relationships
     schedule_entries = relationship("ScheduleEntry", back_populates="staff")
