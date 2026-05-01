@@ -7,14 +7,64 @@ import { forkJoin } from 'rxjs';
   selector: 'app-schedule-view',
   standalone: true,
   template: `
-    <div class="container">
+    <div style="width: 100%; padding: 1rem;">
       <div class="card">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
           <span>📋 Schedule View</span>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <button class="btn btn-secondary" (click)="prevMonth()">◀</button>
-            <span style="font-weight: 600; min-width: 140px; text-align: center;">{{ currentMonth }}</span>
-            <button class="btn btn-secondary" (click)="nextMonth()">▶</button>
+          <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+            <button class="btn" [class]="showStats ? 'btn-primary' : 'btn-secondary'" (click)="showStats = !showStats" style="display: flex; align-items: center; gap: 0.4rem;">
+              📊 Staff Statistics {{ showStats ? '▲' : '▼' }}
+            </button>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <button class="btn btn-secondary" (click)="prevMonth()">◀</button>
+              <span style="font-weight: 600; min-width: 140px; text-align: center;">{{ currentMonth }}</span>
+              <button class="btn btn-secondary" (click)="nextMonth()">▶</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Staff Statistics Dropdown Panel -->
+        <div *ngIf="showStats && staffStats.length > 0" style="margin: 1rem 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+          <div style="background: #f8fafc; padding: 0.75rem 1rem; font-weight: 600; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <span>📊 Shift Statistics per Staff</span>
+            <span style="color: #64748b; font-size: 0.85rem;">Total Entries: {{ stats?.totalShifts }}</span>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr style="background: #eef2ff;">
+                  <th style="min-width: 40px;">#</th>
+                  <th style="min-width: 180px;">Staff Name</th>
+                  <th style="text-align: center;">🌅 Morning</th>
+                  <th style="text-align: center;">🌆 Evening</th>
+                  <th style="text-align: center;">🌙 Night</th>
+                  <th style="text-align: center; font-weight: 700;">Total Shifts</th>
+                  <th style="text-align: center;">Days Off</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let s of staffStats; let i = index">
+                  <td style="color: #94a3b8;">{{ i + 1 }}</td>
+                  <td style="font-weight: 600;">{{ s.name }}</td>
+                  <td style="text-align: center;"><span class="badge badge-morning">{{ s.morning }}</span></td>
+                  <td style="text-align: center;"><span class="badge badge-evening">{{ s.evening }}</span></td>
+                  <td style="text-align: center;"><span class="badge badge-night">{{ s.night }}</span></td>
+                  <td style="text-align: center; font-weight: 700; font-size: 1rem;">{{ s.total }}</td>
+                  <td style="text-align: center;"><span class="badge badge-off">{{ s.off }}</span></td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr style="background: #f1f5f9; font-weight: 700;">
+                  <td></td>
+                  <td>TOTALS</td>
+                  <td style="text-align: center;">{{ totals.morning }}</td>
+                  <td style="text-align: center;">{{ totals.evening }}</td>
+                  <td style="text-align: center;">{{ totals.night }}</td>
+                  <td style="text-align: center; font-size: 1rem;">{{ totals.total }}</td>
+                  <td style="text-align: center;">{{ totals.off }}</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         </div>
 
@@ -71,7 +121,7 @@ import { forkJoin } from 'rxjs';
           </table>
         </div>
 
-        <!-- Stats -->
+        <!-- Summary Stats -->
         <div *ngIf="!loading && stats && stats.totalShifts > 0" class="grid grid-3" style="margin-top: 1.5rem;">
           <div class="card" style="text-align: center; background: #dbeafe;">
             <h3 style="color: #1e40af;">{{ stats.totalShifts }}</h3>
@@ -99,6 +149,9 @@ export class ScheduleViewComponent implements OnInit {
   loading = false;
   stats: any = null;
   staffMap: { [id: number]: string } = {};
+  showStats = false;
+  staffStats: any[] = [];
+  totals = { morning: 0, evening: 0, night: 0, total: 0, off: 0 };
 
   constructor(private apiService: ApiService) { }
 
@@ -146,16 +199,16 @@ export class ScheduleViewComponent implements OnInit {
     this.loading = true;
     this.scheduleGrid = [];
     this.stats = null;
+    this.staffStats = [];
+    this.totals = { morning: 0, evening: 0, night: 0, total: 0, off: 0 };
     const year = this.currentDate.getFullYear();
     const month = this.currentDate.getMonth() + 1;
 
-    // Load both staff list and schedules for this month
     forkJoin({
       staff: this.apiService.get<any[]>('/api/v1/staff'),
       schedules: this.apiService.get<any[]>(`/api/v1/schedules/month/${year}/${month}`)
     }).subscribe({
       next: ({ staff, schedules }) => {
-        // Build staff ID → name map
         this.staffMap = {};
         for (const s of staff) {
           this.staffMap[s.id] = s.name;
@@ -166,10 +219,8 @@ export class ScheduleViewComponent implements OnInit {
           return;
         }
 
-        // Use the most recent schedule
         const schedule = schedules[schedules.length - 1];
 
-        // Fetch entries for this schedule
         this.apiService.get<any[]>(`/api/v1/schedules/${schedule.id}/entries`).subscribe({
           next: (entries) => {
             this.processEntries(entries, staff);
@@ -189,9 +240,9 @@ export class ScheduleViewComponent implements OnInit {
   }
 
   processEntries(entries: any[], staffList: any[]) {
-    // Build a lookup: staffId → { date → shiftType }
     const shiftMap: { [staffId: number]: { [date: string]: string } } = {};
     const staffIds = new Set<number>();
+    const perStaff: { [id: number]: { morning: number; evening: number; night: number; total: number } } = {};
 
     for (const entry of entries) {
       staffIds.add(entry.staff_id);
@@ -199,12 +250,20 @@ export class ScheduleViewComponent implements OnInit {
         shiftMap[entry.staff_id] = {};
       }
       shiftMap[entry.staff_id][entry.date] = entry.shift_type;
+
+      if (!perStaff[entry.staff_id]) {
+        perStaff[entry.staff_id] = { morning: 0, evening: 0, night: 0, total: 0 };
+      }
+      perStaff[entry.staff_id].total++;
+      if (entry.shift_type === 'M') perStaff[entry.staff_id].morning++;
+      if (entry.shift_type === 'E') perStaff[entry.staff_id].evening++;
+      if (entry.shift_type === 'N') perStaff[entry.staff_id].night++;
     }
 
     // Build grid rows
     this.scheduleGrid = [];
     for (const staff of staffList) {
-      if (!staffIds.has(staff.id)) continue; // Skip staff not in this schedule
+      if (!staffIds.has(staff.id)) continue;
 
       const shifts: string[] = [];
       for (const day of this.days) {
@@ -219,7 +278,34 @@ export class ScheduleViewComponent implements OnInit {
       });
     }
 
-    // Compute stats
+    // Build staff statistics
+    const totalDays = this.days.length;
+    this.staffStats = [];
+    this.totals = { morning: 0, evening: 0, night: 0, total: 0, off: 0 };
+
+    for (const staff of staffList) {
+      if (!staffIds.has(staff.id)) continue;
+      const s = perStaff[staff.id] || { morning: 0, evening: 0, night: 0, total: 0 };
+      const off = totalDays - s.total;
+      this.staffStats.push({
+        name: staff.name,
+        morning: s.morning,
+        evening: s.evening,
+        night: s.night,
+        total: s.total,
+        off: off
+      });
+      this.totals.morning += s.morning;
+      this.totals.evening += s.evening;
+      this.totals.night += s.night;
+      this.totals.total += s.total;
+      this.totals.off += off;
+    }
+
+    // Sort by total shifts descending
+    this.staffStats.sort((a: any, b: any) => b.total - a.total);
+
+    // Compute summary stats
     let totalShifts = 0;
     let nightShifts = 0;
     let morningShifts = 0;
