@@ -18,3 +18,4 @@ class Staff(Base):
     # Relationships
     schedule_entries = relationship("ScheduleEntry", back_populates="staff")
     night_tracking = relationship("NightTracking", back_populates="staff")
+    shifts = relationship("Shift", back_populates="staff")

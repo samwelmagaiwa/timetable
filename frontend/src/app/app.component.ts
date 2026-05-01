@@ -8,7 +8,7 @@ import { NavbarComponent } from './shared/navbar/navbar.component';
   template: `
     <app-navbar></app-navbar>
     <main style="min-height: calc(100vh - 70px); background: #f1f5f9;">
-      <div class="container" style="padding-top: 2rem; padding-bottom: 2rem;">
+      <div style="width: 100%; max-width: 1600px; margin: 0 auto; padding: 1.5rem 2rem;">
         <router-outlet></router-outlet>
       </div>
     </main>

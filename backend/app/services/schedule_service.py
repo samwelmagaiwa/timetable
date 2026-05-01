@@ -50,6 +50,7 @@ class ScheduleService:
     
     def generate(self, request: ScheduleGenerateRequest):
         from app.models.staff import Staff
+        from app.schemas.schedule_entry import ScheduleEntry as ScheduleEntrySchema
         
         # Create schedule first
         schedule = Schedule(
@@ -67,15 +68,39 @@ class ScheduleService:
             query = query.filter(Staff.id.in_(request.staff_ids))
         staff_list = query.all()
         
-        # Run scheduler engine
-        engine = SchedulerEngine(
-            self.db, staff_list, 
-            request.start_date, request.end_date, 
-            schedule.id
-        )
-        entries = engine.generate_schedule()
+        if not staff_list:
+            return {"schedule": schedule, "entries": [], "message": "No staff found"}
         
-        return {"schedule": schedule, "entries": entries}
+        # Run scheduler engine
+        try:
+            engine = SchedulerEngine(
+                self.db, staff_list, 
+                request.start_date, request.end_date, 
+                schedule.id
+            )
+            entries = engine.generate_schedule()
+            
+            # Convert ORM entries to dicts for JSON serialization
+            entry_dicts = []
+            for entry in entries:
+                entry_dicts.append({
+                    "id": entry.id,
+                    "schedule_id": entry.schedule_id,
+                    "staff_id": entry.staff_id,
+                    "date": str(entry.date),
+                    "day_of_week": str(entry.day_of_week),
+                    "shift_type": str(entry.shift_type)
+                })
+            
+            return {"schedule": {
+                        "id": schedule.id,
+                        "name": schedule.name,
+                        "start_date": str(schedule.start_date),
+                        "end_date": str(schedule.end_date),
+                        "is_locked": schedule.is_locked
+                    }, "entries": entry_dicts}
+        except Exception as e:
+            return {"schedule": schedule, "entries": [], "error": str(e)}
     
     def update_shift(self, entry_id: int, update: ScheduleEntryUpdate):
         """Update a single shift entry"""

@@ -34,6 +34,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      flex-wrap: wrap;
+      gap: 0.75rem;
     }
     .nav-brand {
       display: flex;
@@ -48,7 +50,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     }
     .nav-links {
       display: flex;
-      gap: 1rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
     }
     .nav-link {
       color: white;
@@ -59,12 +62,38 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       align-items: center;
       gap: 0.5rem;
       transition: background 0.2s;
+      white-space: nowrap;
+      font-size: 0.9rem;
     }
     .nav-link:hover, .nav-link.active {
       background: rgba(255,255,255,0.2);
     }
     .nav-icon {
       font-size: 1.125rem;
+    }
+    @media (max-width: 768px) {
+      .navbar {
+        padding: 0.75rem 1rem;
+        justify-content: center;
+      }
+      .nav-links {
+        gap: 0.25rem;
+        justify-content: center;
+      }
+      .nav-link {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.8rem;
+      }
+    }
+    @media (max-width: 480px) {
+      .navbar {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .nav-links {
+        width: 100%;
+        justify-content: center;
+      }
     }
   `],
   imports: [RouterLink, RouterLinkActive]
