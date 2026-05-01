@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { ApiService } from '../../core/api.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -79,7 +79,7 @@ export class DashboardComponent implements OnInit {
   nightShiftsThisMonth = 0;
   recentSchedules: any[] = [];
 
-  constructor(private http: HttpClient) {}
+  constructor(private apiService: ApiService) {}
 
   ngOnInit() {
     this.loadDashboardData();
@@ -87,14 +87,14 @@ export class DashboardComponent implements OnInit {
 
   loadDashboardData() {
     // Load staff count
-    this.http.get<any[]>('http://localhost:8000/api/v1/staff').subscribe({
+    this.apiService.get<any[]>('/api/v1/staff').subscribe({
       next: (data) => this.staffCount = data.length,
       error: (err) => console.error('Error loading staff:', err)
     });
 
     // Load schedules
     const now = new Date();
-    this.http.get<any[]>(`http://localhost:8000/api/v1/schedules/month/${now.getFullYear()}/${now.getMonth() + 1}`).subscribe({
+    this.apiService.get<any[]>(`/api/v1/schedules/month/${now.getFullYear()}/${now.getMonth() + 1}`).subscribe({
       next: (data) => {
         this.scheduleCount = data.length;
         this.recentSchedules = data.slice(0, 5); // Show last 5

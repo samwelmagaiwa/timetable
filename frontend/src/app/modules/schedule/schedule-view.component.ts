@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
+import { ApiService } from '../../core/api.service';
 
 @Component({
   selector: 'app-schedule-view',
@@ -90,7 +90,7 @@ export class ScheduleViewComponent implements OnInit {
   loading = false;
   stats: any = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(private apiService: ApiService) {}
 
   ngOnInit() {
     this.updateMonth();
@@ -135,7 +135,7 @@ export class ScheduleViewComponent implements OnInit {
     const year = this.currentDate.getFullYear();
     const month = this.currentDate.getMonth() + 1;
 
-    this.http.get<any[]>(`http://localhost:8000/api/v1/schedules/month/${year}/${month}`).subscribe({
+    this.apiService.get<any[]>(`/api/v1/schedules/month/${year}/${month}`).subscribe({
       next: (schedules) => {
         this.processSchedules(schedules);
         this.loading = false;
@@ -149,7 +149,6 @@ export class ScheduleViewComponent implements OnInit {
 
   processSchedules(schedules: any[]) {
     // TODO: Process schedule entries into grid format
-    // This is a simplified version - expand based on your data structure
     this.stats = {
       totalShifts: 0,
       nightShifts: 0,

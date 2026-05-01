@@ -1,7 +1,7 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { ApiService } from '../../core/api.service';
 
 @Component({
   selector: 'app-schedule-edit',
@@ -76,7 +76,7 @@ export class ScheduleEditComponent implements OnInit {
   staffList: any[] = [];
   loading = true;
 
-  constructor(private http: HttpClient) {}
+  constructor(private apiService: ApiService) {}
 
   ngOnInit() {
     this.loadStaff();
@@ -84,7 +84,7 @@ export class ScheduleEditComponent implements OnInit {
   }
 
   loadStaff() {
-    this.http.get<any[]>('http://localhost:8000/api/v1/staff').subscribe({
+    this.apiService.get<any[]>('/api/v1/staff').subscribe({
       next: (data) => this.staffList = data,
       error: (err) => console.error('Error loading staff:', err)
     });
@@ -93,7 +93,7 @@ export class ScheduleEditComponent implements OnInit {
   loadEntries() {
     if (!this.scheduleId) return;
     
-    this.http.get<any[]>(`http://localhost:8000/api/v1/schedules/${this.scheduleId}/entries`).subscribe({
+    this.apiService.get<any[]>(`/api/v1/schedules/${this.scheduleId}/entries`).subscribe({
       next: (data) => {
         this.entries = data;
         this.loading = false;
@@ -127,7 +127,7 @@ export class ScheduleEditComponent implements OnInit {
   updateShift(entry: any, event: any) {
     const newType = event.target.value;
     
-    this.http.put(`http://localhost:8000/api/v1/schedules/shift/${entry.id}`, {
+    this.apiService.put(`/api/v1/schedules/shift/${entry.id}`, {
       shift_type: newType
     }).subscribe({
       next: () => {
