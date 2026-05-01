@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
   selector: 'app-navbar',
+  standalone: true,
   template: `
     <nav class="navbar">
       <div class="nav-brand">
@@ -10,6 +11,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <span class="nav-title">Timetable System</span>
       </div>
       <div class="nav-links">
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
+          <span class="nav-icon">📊</span> Dashboard
+        </a>
         <a routerLink="/staff" routerLinkActive="active" class="nav-link">
           <span class="nav-icon">👥</span> Staff
         </a>
@@ -65,4 +69,4 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   `],
   imports: [RouterLink, RouterLinkActive]
 })
-export class NavbarComponent {}
+export class NavbarComponent { }

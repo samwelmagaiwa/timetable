@@ -1,10 +1,12 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../core/api.service';
 
 @Component({
   selector: 'app-schedule-edit',
+  standalone: true,
   template: `
     <div class="container">
       <div class="card">
@@ -68,7 +70,7 @@ import { ApiService } from '../../core/api.service';
       </div>
     </div>
   `,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, RouterLink]
 })
 export class ScheduleEditComponent implements OnInit {
   @Input() scheduleId?: number;
@@ -76,7 +78,7 @@ export class ScheduleEditComponent implements OnInit {
   staffList: any[] = [];
   loading = true;
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService) { }
 
   ngOnInit() {
     this.loadStaff();
@@ -92,7 +94,7 @@ export class ScheduleEditComponent implements OnInit {
 
   loadEntries() {
     if (!this.scheduleId) return;
-    
+
     this.apiService.get<any[]>(`/api/v1/schedules/${this.scheduleId}/entries`).subscribe({
       next: (data) => {
         this.entries = data;
@@ -116,7 +118,7 @@ export class ScheduleEditComponent implements OnInit {
   }
 
   getBadgeClass(shiftType: string): string {
-    switch(shiftType) {
+    switch (shiftType) {
       case 'M': return 'badge-morning';
       case 'E': return 'badge-evening';
       case 'N': return 'badge-night';
@@ -126,7 +128,7 @@ export class ScheduleEditComponent implements OnInit {
 
   updateShift(entry: any, event: any) {
     const newType = event.target.value;
-    
+
     this.apiService.put(`/api/v1/schedules/shift/${entry.id}`, {
       shift_type: newType
     }).subscribe({

@@ -5,33 +5,34 @@ import { ApiService } from '../../core/api.service';
 
 @Component({
   selector: 'app-schedule-generator',
+  standalone: true,
   template: `
-    <div className="container">
-      <div className="card">
-        <div className="card-header">
+    <div class="container">
+      <div class="card">
+        <div class="card-header">
           <span>⚙️</span> Generate New Schedule
         </div>
 
-        <div *ngIf="successMessage" className="alert alert-success">
+        <div *ngIf="successMessage" class="alert alert-success">
           {{ successMessage }}
         </div>
-        <div *ngIf="errorMessage" className="alert alert-error">
+        <div *ngIf="errorMessage" class="alert alert-error">
           {{ errorMessage }}
         </div>
 
         <form (ngSubmit)="generate()">
-          <div className="grid grid-2" style="margin-top: 1.5rem;">
-            <div className="form-group">
+          <div class="grid grid-2" style="margin-top: 1.5rem;">
+            <div class="form-group">
               <label>📅 Start Date</label>
-              <input type="date" className="form-control" [(ngModel)]="startDate" name="startDate" required>
+              <input type="date" class="form-control" [(ngModel)]="startDate" name="startDate" required>
             </div>
-            <div className="form-group">
+            <div class="form-group">
               <label>📅 End Date</label>
-              <input type="date" className="form-control" [(ngModel)]="endDate" name="endDate" required>
+              <input type="date" class="form-control" [(ngModel)]="endDate" name="endDate" required>
             </div>
           </div>
 
-          <div className="form-group" style="margin-top: 1rem;">
+          <div class="form-group" style="margin-top: 1rem;">
             <label>👥 Select Staff (leave empty for all)</label>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem;">
               <label *ngFor="let staff of staffList" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
@@ -42,7 +43,7 @@ import { ApiService } from '../../core/api.service';
           </div>
 
           <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; display: flex; gap: 1rem; align-items: center;">
-            <button type="submit" className="btn btn-primary" [disabled]="loading" style="font-size: 1rem; padding: 0.75rem 2rem;">
+            <button type="submit" class="btn btn-primary" [disabled]="loading" style="font-size: 1rem; padding: 0.75rem 2rem;">
               {{ loading ? '⏳ Generating...' : '🚀 Generate Schedule' }}
             </button>
             <div *ngIf="loading" style="color: #64748b;">
@@ -52,18 +53,18 @@ import { ApiService } from '../../core/api.service';
         </form>
 
         <!-- Generated Schedule Preview -->
-        <div *ngIf="generatedSchedule" className="card" style="margin-top: 2rem; background: #f0fdf4; border: 1px solid #86efac;">
+        <div *ngIf="generatedSchedule" class="card" style="margin-top: 2rem; background: #f0fdf4; border: 1px solid #86efac;">
           <h3 style="color: #166534;">✅ Schedule Generated Successfully!</h3>
           <p><strong>Schedule:</strong> {{ generatedSchedule.schedule?.name }}</p>
           <p><strong>Entries:</strong> {{ generatedSchedule.entries?.length || 0 }} shifts assigned</p>
-          <button className="btn btn-success" (click)="viewSchedule(generatedSchedule.schedule?.id)" style="margin-top: 1rem;">
+          <button class="btn btn-success" (click)="viewSchedule(generatedSchedule.schedule?.id)" style="margin-top: 1rem;">
             👁 View Schedule
           </button>
         </div>
       </div>
 
       <!-- Info Card -->
-      <div className="card" style="background: #eff6ff; border: 1px solid #bfdbfe;">
+      <div class="card" style="background: #eff6ff; border: 1px solid #bfdbfe;">
         <h3 style="color: #1e40af;">📋 Scheduling Rules Applied</h3>
         <ul style="margin-top: 1rem; padding-left: 1.5rem; color: #1e3a8a;">
           <li>Night shifts assigned first with fairness constraints (min 8, max 10 per staff)</li>
@@ -87,7 +88,7 @@ export class ScheduleGeneratorComponent implements OnInit {
   errorMessage = '';
   generatedSchedule: any = null;
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService) { }
 
   ngOnInit() {
     this.loadStaff();
@@ -148,60 +149,5 @@ export class ScheduleGeneratorComponent implements OnInit {
 
   viewSchedule(scheduleId: number) {
     window.open(`/schedule/view/${scheduleId}`, '_blank');
-  }
-}
-
-  loadStaff() {
-    this.http.get<any[]>('http://localhost:8000/api/v1/staff').subscribe({
-      next: (data) => this.staffList = data,
-      error: (err) => console.error('Error loading staff:', err)
-    });
-  }
-
-  toggleStaff(staffId: number) {
-    const index = this.selectedStaff.indexOf(staffId);
-    if (index > -1) {
-      this.selectedStaff.splice(index, 1);
-    } else {
-      this.selectedStaff.push(staffId);
-    }
-  }
-
-  generate() {
-    if (!this.startDate || !this.endDate) {
-      this.errorMessage = 'Please select both start and end dates';
-      return;
-    }
-
-    this.loading = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-    this.generatedSchedule = null;
-
-    const payload: any = {
-      start_date: this.startDate,
-      end_date: this.endDate
-    };
-
-    if (this.selectedStaff.length > 0) {
-      payload.staff_ids = this.selectedStaff;
-    }
-
-    this.http.post('http://localhost:8000/api/v1/schedules/generate', payload).subscribe({
-      next: (response) => {
-        this.generatedSchedule = response;
-        this.successMessage = 'Schedule generated successfully!';
-        this.loading = false;
-      },
-      error: (err) => {
-        this.errorMessage = 'Error generating schedule: ' + (err.error?.detail || err.message);
-        this.loading = false;
-      }
-    });
-  }
-
-  viewSchedule(scheduleId: number) {
-    // Navigate to schedule view - you can implement routing later
-    window.open(`http://localhost:4200/schedule/view/${scheduleId}`, '_blank');
   }
 }

@@ -4,6 +4,7 @@ import { ApiService } from '../../core/api.service';
 
 @Component({
   selector: 'app-schedule-view',
+  standalone: true,
   template: `
     <div class="container">
       <div class="card">
@@ -90,7 +91,7 @@ export class ScheduleViewComponent implements OnInit {
   loading = false;
   stats: any = null;
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService) { }
 
   ngOnInit() {
     this.updateMonth();
@@ -157,7 +158,7 @@ export class ScheduleViewComponent implements OnInit {
   }
 
   getBadgeClass(shift: string): string {
-    switch(shift) {
+    switch (shift) {
       case 'M': return 'badge-morning';
       case 'E': return 'badge-evening';
       case 'N': return 'badge-night';

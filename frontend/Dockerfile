@@ -12,7 +12,7 @@ RUN npm run build
 # Stage 2: Serve with nginx
 FROM nginx:alpine
 
-COPY --from=build /app/dist/timetable-frontend/browser /usr/share/nginx/html
+COPY --from=build /app/dist/timetable/browser /usr/share/nginx/html
 
 COPY nginx-frontend.conf /etc/nginx/conf.d/default.conf
 

@@ -4,6 +4,7 @@ import { NavbarComponent } from './shared/navbar/navbar.component';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   template: `
     <app-navbar></app-navbar>
     <main style="min-height: calc(100vh - 70px); background: #f1f5f9;">
@@ -17,4 +18,4 @@ import { NavbarComponent } from './shared/navbar/navbar.component';
   `,
   imports: [RouterOutlet, NavbarComponent]
 })
-export class AppComponent {}
+export class AppComponent { }
