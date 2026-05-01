@@ -1,14 +1,68 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
   selector: 'app-navbar',
   template: `
     <nav class="navbar">
-      <a routerLink="/staff">Staff</a>
-      <a routerLink="/schedule">Schedule</a>
+      <div class="nav-brand">
+        <span class="nav-logo">📅</span>
+        <span class="nav-title">Timetable System</span>
+      </div>
+      <div class="nav-links">
+        <a routerLink="/staff" routerLinkActive="active" class="nav-link">
+          <span class="nav-icon">👥</span> Staff
+        </a>
+        <a routerLink="/schedule" routerLinkActive="active" class="nav-link">
+          <span class="nav-icon">📋</span> Schedule
+        </a>
+        <a routerLink="/schedule/generate" routerLinkActive="active" class="nav-link">
+          <span class="nav-icon">⚙️</span> Generate
+        </a>
+      </div>
     </nav>
   `,
-  imports: [RouterLink]
+  styles: [`
+    .navbar {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: white;
+      font-weight: 600;
+      font-size: 1.25rem;
+    }
+    .nav-logo {
+      font-size: 1.5rem;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1rem;
+    }
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.2s;
+    }
+    .nav-link:hover, .nav-link.active {
+      background: rgba(255,255,255,0.2);
+    }
+    .nav-icon {
+      font-size: 1.125rem;
+    }
+  `],
+  imports: [RouterLink, RouterLinkActive]
 })
 export class NavbarComponent {}
